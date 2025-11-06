@@ -60,7 +60,17 @@ document.addEventListener('keyup', function (event) {
 });
 
 let fetching = false;
-avatar.onclick = onClick;
+avatar.onclick = () => {
+  const speech = new SpeechSynthesisUtterance('请按 Ctrl+A，和我说完话松手～');
+  speech.pitch = 1.3;
+  speechSynthesis.speak(speech);
+  avatar.src =
+    'https://eyetracking-model.deepalgo.cn/hachimi-avatars/speaking.png';
+  speech.onend = () => {
+    avatar.src =
+      'https://eyetracking-model.deepalgo.cn/hachimi-avatars/normal.png';
+  };
+};
 
 function onClick(text) {
   if (fetching) {
