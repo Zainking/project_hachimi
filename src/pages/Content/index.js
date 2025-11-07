@@ -183,7 +183,12 @@ function abstract() {
     .then((response) => response.json())
     .then((data) => {
       theDoc = data?.choices?.[0]?.message?.content;
-      console.log('文章摘要完成。' + theDoc);
+      textContainer.style.display = 'block';
+      textContainer.innerHTML = marked('页面摘要分析完成啦～');
+
+      setTimeout(() => {
+        textContainer.style.display = 'none';
+      }, 2000);
     })
     .catch((error) => {
       console.error('Error:', error);
