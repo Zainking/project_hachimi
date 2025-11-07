@@ -1,5 +1,7 @@
 import { marked } from 'marked';
 
+let theDoc = document.body.innerText;
+
 const container = document.createElement('div');
 container.className = 'hachimi-container';
 // container.setAttribute('draggable', 'true');
@@ -79,7 +81,10 @@ function onClick(text) {
   fetching = true;
   avatar.src =
     'https://eyetracking-model.deepalgo.cn/hachimi-avatars/thinking.png';
-  const speech = new SpeechSynthesisUtterance('来让我想想～');
+  const selected = document.getSelection()?.toString().trim();
+  const speech = new SpeechSynthesisUtterance(
+    (selected ? '你选中了' + selected + ',' : '') + '来让我想想～'
+  );
   speech.pitch = 1.3;
   speechSynthesis.speak(speech);
   fetch('https://api.deepseek.com/chat/completions', {
@@ -95,7 +100,7 @@ function onClick(text) {
           role: 'system',
           content:
             'You are a helpful assistant. You will analysis text below, ' +
-            document.body.innerText,
+            theDoc,
         },
         {
           role: 'system',
@@ -103,14 +108,14 @@ function onClick(text) {
             'User selected  ' +
             JSON.stringify({
               pharagh: document.getSelection()?.anchorNode?.data,
-              selectedText: document.getSelection()?.toString().trim(),
+              selectedText: selected,
             }),
         },
         {
           role: 'system',
           content: `Please respond in JSON format with two parts:
             1. "voice": Brief emotional response (1-2 sentences, suitable for speech synthesis, expressing empathy, encouragement, or friendliness in a cute and cheerful tone)
-            2. "text": Detailed rational analysis (including specific information, steps, suggestions, etc.)
+            2. "text": Detailed rational analysis (including specific information, steps, suggestions, etc.), and this part of the reply should not exceed 300 words.
 
             Response format:
             {
@@ -155,4 +160,40 @@ function onClick(text) {
 }
 function removeEmoji(str) {
   return str.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+|[\u2600-\u27BF]/g, '');
+}
+function abstract() {
+  fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer sk-00291a3aacea4a0f8e5de5fa90f9d091',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a text compression tool. When a user provides you with a document, your task is to compress and summarize the key content into 500 words or less. Extract the main points, important data, and core conclusions while removing redundant information, excessive examples, and unnecessary details. Maintain the logical structure of the original text and use clear, concise language. Do not add any information that wasn't in the original document. Keep all technical terms and specific numbers accurate. Simply output the compressed version without additional commentary.`,
+        },
+        { role: 'user', content: theDoc },
+      ],
+      stream: false,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      theDoc = data?.choices?.[0]?.message?.content;
+      console.log('文章摘要完成。' + theDoc);
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+}
+
+if (document.readyState === 'complete') {
+  // 文档已经加载完成，直接执行
+  abstract();
+} else {
+  // 文档还未加载完成，添加监听器
+  window.addEventListener('load', abstract);
 }
