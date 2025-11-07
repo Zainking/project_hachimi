@@ -19,7 +19,7 @@ container.appendChild(avatar);
 document.body.appendChild(container);
 
 let onKeyDown = false;
-
+let timeout;
 window.SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
@@ -116,16 +116,18 @@ function onClick(text) {
           content: `Please respond in JSON format with two parts:
             1. "voice": Brief emotional response (1-2 sentences, suitable for speech synthesis, expressing empathy, encouragement, or friendliness in a cute and cheerful tone)
             2. "text": Detailed rational analysis (including specific information, steps, suggestions, etc.), and this part of the reply should not exceed 300 words.
-
+            3. "emotion": Select ONE emotion that best matches the voice response from: sob, pouty, seriously, smiled, happy, disgust, delighted, bullied.
             Response format:
             {
               "voice": "Brief emotional response",
-              "text": "Detailed rational analysis (Optional)"
+              "text": "Detailed rational analysis (Optional)",
+              "emotion": "One of: sob/pouty/seriously/smiled/happy/disgust/delighted/bullied"
             }
             Important: 
             - Return ONLY the JSON object without any markdown formatting, code blocks, or \`\`\` markers around the JSON itself
             - Markdown IS allowed INSIDE the "text" field for formatting the content
-            - The JSON structure must be valid and parseable`,
+            - The JSON structure must be valid and parseable
+            - The "emotion" field must contain exactly one of the specified emotion words`,
         },
         { role: 'user', content: text || '你好!' },
       ],
@@ -141,13 +143,13 @@ function onClick(text) {
       const speech = new SpeechSynthesisUtterance(dataJSON.voice);
       speech.pitch = 1.5;
       speechSynthesis.speak(speech);
-      avatar.src =
-        'https://eyetracking-model.deepalgo.cn/hachimi-avatars/speaking.png';
+      avatar.src = `https://eyetracking-model.deepalgo.cn/hachimi-avatars/${dataJSON.emotion}.png`;
       speech.onend = () => {
         avatar.src =
           'https://eyetracking-model.deepalgo.cn/hachimi-avatars/normal.png';
       };
-      setTimeout(() => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
         textContainer.style.display = 'none';
       }, dataJSON.text.length * 100);
       console.log('Response:', data);
@@ -186,7 +188,8 @@ function abstract() {
       textContainer.style.display = 'block';
       textContainer.innerHTML = marked('页面摘要分析完成啦～');
 
-      setTimeout(() => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
         textContainer.style.display = 'none';
       }, 2000);
     })
